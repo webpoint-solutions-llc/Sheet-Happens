@@ -12,6 +12,7 @@ type envStruct struct {
 	SMTPPassword string
 	SMTPHost     string
 	SMTPPort     string
+	FrontHost    string
 }
 
 var Env *envStruct
@@ -22,6 +23,7 @@ func LoadEnv() *envStruct {
 		SMTPPassword: getEnv("SMTP_PASSWORD"),
 		SMTPHost:     getEnv("SMTP_HOST"),
 		SMTPPort:     getEnv("SMTP_PORT"),
+		FrontHost:    getEnv("FRONTEND_HOST"),
 	}
 	return Env
 }

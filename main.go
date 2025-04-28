@@ -12,7 +12,12 @@ import (
 	"github.com/webpointsolutions/sheet-happens/internal/services"
 )
 
-var servflag = flag.Bool("serv", false, "serve http server ui")
+var (
+	servflag = flag.Bool("serv", false, "serve http server ui")
+	branch   = flag.String("b", "", "Specific branch name (optional)")
+	days     = flag.Int("t", 0, "Number of days to look back for commits (0 = all history)")
+	dir      = flag.String("d", ".", "Git repository directory (default: current directory)")
+)
 
 func init() {
 	flag.Parse()
@@ -27,11 +32,9 @@ func main() {
 		http.ListenAndServe("0.0.0.0:8080", handler)
 	}
 
-	if len(os.Args) < 2 {
-		log.Fatal("please provide the git directory")
+	if _, err := os.Stat(*dir); os.IsNotExist(err) {
+		log.Fatalf("Provided directory does not exist: %s", *dir)
 	}
 
-	folder := os.Args[1]
-
-	services.GenerateCSV(folder)
+	services.GenerateCSV(*dir, *branch, *days)
 }
