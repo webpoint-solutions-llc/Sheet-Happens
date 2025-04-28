@@ -14,6 +14,8 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import LogoSvg from "../../../../public/logo";
+import LogoComponent from "../../../../public/logo";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -69,9 +71,11 @@ const LoginPage = () => {
     <>
       <div className="flex items-center justify-center h-screen bg-gray-100">
         <div className="flex flex-col max-w-md w-full bg-white shadow-lg rounded-lg p-8">
-          <div className="flex items-center justify-center">Logo</div>
+          <div className="flex items-center justify-center">
+            <LogoComponent />
+          </div>
+          <h1 className="text-3xl font-semibold">Log in to your account</h1>
           <div className="flex items-center justify-center flex-col w-full gap-3 mb-6">
-            <h1 className="text-3xl font-bold">Log in to your account</h1>
             <p className="text-gray-500">
               Welcome back! Please enter your details
             </p>
