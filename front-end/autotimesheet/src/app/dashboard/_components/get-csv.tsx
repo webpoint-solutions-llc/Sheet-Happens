@@ -16,9 +16,7 @@ interface GetCsvPageProps {
   id?: string;
 }
 
-export default function GetCsvPage({
-  id = "1725815494_6448_log",
-}: GetCsvPageProps) {
+export default function GetCsvPage({ id = "" }: GetCsvPageProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [csvText, setCsvText] = useState<string>(""); // Raw CSV text
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,7 +65,7 @@ export default function GetCsvPage({
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     rowIndex: number,
-    field: string
+    field: string,
   ) => {
     const newData = [...csvData];
     newData[rowIndex][field] = e.target.value;
@@ -93,7 +91,7 @@ export default function GetCsvPage({
       // Filter out empty rows
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       parsedData = parsedData.filter((row: any) =>
-        Object.values(row).some((value) => value !== "")
+        Object.values(row).some((value) => value !== ""),
       );
 
       // Map the CSV columns to our required fields
@@ -126,26 +124,26 @@ export default function GetCsvPage({
             Object.keys(row).find(
               (key) =>
                 key.toLowerCase().includes("date") ||
-                key.toLowerCase().includes("time")
+                key.toLowerCase().includes("time"),
             ) || "";
 
           const authorField =
             Object.keys(row).find(
               (key) =>
                 key.toLowerCase().includes("author") ||
-                key.toLowerCase().includes("name")
+                key.toLowerCase().includes("name"),
             ) || "";
 
           const commitTypeField =
             Object.keys(row).find(
               (key) =>
                 key.toLowerCase().includes("commit type") ||
-                key.toLowerCase().includes("type")
+                key.toLowerCase().includes("type"),
             ) || "";
 
           const scopeField =
             Object.keys(row).find((key) =>
-              key.toLowerCase().includes("scope")
+              key.toLowerCase().includes("scope"),
             ) || "";
 
           const descriptionField =
@@ -153,7 +151,7 @@ export default function GetCsvPage({
               (key) =>
                 key.toLowerCase().includes("message") ||
                 key.toLowerCase().includes("description") ||
-                key.toLowerCase().includes("log")
+                key.toLowerCase().includes("log"),
             ) || "";
 
           return {

@@ -17,7 +17,12 @@ import { useRouter } from "next/navigation";
 import LogoComponent from "../../../../public/logo";
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
+  email: z
+    .string()
+    .email({ message: "Please enter a valid email address" })
+    .refine((email) => email.endsWith("@webpoint.io"), {
+      message: "Email must be a webpoint.io address",
+    }),
   password: z.string(),
 });
 
