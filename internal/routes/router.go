@@ -162,6 +162,13 @@ func Routes(r *echo.Group) {
 				log.Println("", emailError)
 				return
 			}
+
+			if err := services.SendSlackMessage(services.MessageBody{
+				FileName: newFileName,
+				Url:      services.GetFileFrontendUrl(newFileName),
+			}); err != nil {
+				log.Println(err)
+			}
 		}()
 
 		return responder.Success(c, "Successfully uploaded the CSV")
