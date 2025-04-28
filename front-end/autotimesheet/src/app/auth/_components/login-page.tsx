@@ -14,7 +14,6 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import LogoSvg from "../../../../public/logo";
 import LogoComponent from "../../../../public/logo";
 
 const formSchema = z.object({
