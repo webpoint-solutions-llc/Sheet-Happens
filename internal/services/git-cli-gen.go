@@ -136,7 +136,8 @@ func GenerateCSV(folder string, branchName string, sinceDays int) {
 		log.Fatal("Error writing CSV:", err)
 	}
 	w.Flush()
-	logFrontendUiURL(filename)
+
+	fmt.Println("URL: ", GetFileFrontendUrl(filename))
 }
 
 func parseSemanticCommit(message string) (commitType, scope, description string) {
@@ -155,7 +156,6 @@ func parseSemanticCommit(message string) (commitType, scope, description string)
 	return result["type"], result["scope"], result["description"]
 }
 
-func logFrontendUiURL(filename string) {
-	url := config.Env.FrontHost + "/dashboard/" + filename
-	fmt.Println("URL: ", url)
+func GetFileFrontendUrl(filename string) string {
+	return config.Env.FrontHost + "/dashboard/" + filename
 }

@@ -1,10 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Hello</title>
+  <meta charset="UTF-8">
+
 </head>
-<body>
-    <h1>{{.Name}}</h1>
-        <p>This is the index page.</p>
-    </body>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #ffffff;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; padding: 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="border: 2px solid #3C82F9; border-radius: 8px;">
+          <tr>
+            <td align="left" style="padding: 40px 40px 20px 40px;">
+              <img src="https://d3v7ca2cnxg8j2.cloudfront.net/public/static/shit-happens.png" alt="Sheet Happens" width="150" style="display: block;">
+            </td>
+          </tr>
+          <tr>
+            <td align="left" style="padding: 0px 40px 20px 40px;">
+              <h2 style="margin: 0 0 10px 0; font-size: 20px; color: #333333;">Hello,</h2>
+              <p style="margin: 0; font-size: 16px; color: #666666;">
+                Please find the log sheet by clicking the button below. We encourage you to review the entries carefully and reach out if you have any questions or concerns.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding: 30px 40px 20px 40px;">
+                <a href="{{.Link}}" style="background-color: #3C82F9; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 25px; font-size: 16px; display: inline-block;">
+                View Sheet →
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="background-color: #f6f6f6; padding: 30px 0;">
+              <img src="https://d3v7ca2cnxg8j2.cloudfront.net/public/static/webpoint-png.png" alt="Webpoint" width="120" style="display: block; margin-bottom: 10px;">
+              <p style="margin: 0; font-size: 14px; color: #999999;">©Webpoint {{.currentYear}}</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
 </html>

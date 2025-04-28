@@ -8,12 +8,13 @@ import (
 	"github.com/go-git/go-git/v5"
 )
 
-func GetDestinationPath(filename string) string {
+func GetDestinationPath(filename string) (dest string, fname string) {
 	ext := filepath.Ext(filename) // file extension
 	name := strings.TrimSuffix(filename, ext)
-	finalName := name + "_final" + ext
+	fname = name + "_final"
+	finalName := fname + ext
 
-	return filepath.Join("out", finalName)
+	return filepath.Join("out", finalName), fname
 }
 
 func GetRepoNameFromPath(path string) string {

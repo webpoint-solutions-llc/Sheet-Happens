@@ -14,6 +14,7 @@ func NewServer() http.Handler {
 	mux.Pre(middleware.RemoveTrailingSlash())
 	mux.Use(middleware.Secure())
 	mux.Use(middleware.RequestID())
+	mux.Use(middleware.Logger())
 
 	mux.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     []string{"*"},

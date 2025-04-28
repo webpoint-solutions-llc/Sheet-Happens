@@ -101,7 +101,7 @@ func Routes(r *echo.Group) {
 		defer src.Close()
 
 		// Create destination file
-		dstPath := utils.GetDestinationPath(file.Filename)
+		dstPath, newFileName := utils.GetDestinationPath(file.Filename)
 		dst, err := os.Create(dstPath)
 		if err != nil {
 			return err
@@ -116,7 +116,7 @@ func Routes(r *echo.Group) {
 		// send email on background
 		go func() {
 			attachment := services.EmailAttachment{
-				FileName:    file.Filename,
+				FileName:    newFileName,
 				ContentType: "application/octet-stream",
 			}
 
@@ -128,6 +128,7 @@ func Routes(r *echo.Group) {
 
 			data := map[string]any{
 				"Name": "Aashutosh",
+				"Link": services.GetFileFrontendUrl(newFileName),
 			}
 
 			reponame := utils.GetRepoNameFromFileName(file.Filename)
