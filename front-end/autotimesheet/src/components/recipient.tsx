@@ -1,18 +1,35 @@
+"use client";
+
+import type React from "react";
+
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { X } from "lucide-react";
+import { Folder, Plus, X } from "lucide-react";
+import Papa from "papaparse";
 
-const Recipient = ({ csvData }) => {
+interface RecipientProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  csvData?: any[];
+}
+
+interface RecipientType {
+  name: string;
+  email: string;
+  selected: boolean;
+}
+
+const Recipient = ({ csvData = [] }: RecipientProps) => {
   const [emailInput, setEmailInput] = useState("");
-  const [recipients, setRecipients] = useState([]);
+  const [recipients, setRecipients] = useState<RecipientType[]>([]);
+  const [isSending, setIsSending] = useState(false);
 
-  const validateEmail = (email) => {
+  const validateEmail = (email: string): RegExpMatchArray | null => {
     return email.match(
-      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
     );
   };
 
@@ -24,7 +41,7 @@ const Recipient = ({ csvData }) => {
     // Split by commas and process each email
     const emails = emailInput.split(",").map((email) => email.trim());
 
-    const newRecipients = [];
+    const newRecipients: RecipientType[] = [];
 
     emails.forEach((email) => {
       if (!validateEmail(email)) {
@@ -58,19 +75,19 @@ const Recipient = ({ csvData }) => {
     }
   };
 
-  const handleRemoveRecipient = (email) => {
+  const handleRemoveRecipient = (email: string) => {
     setRecipients(recipients.filter((r) => r.email !== email));
   };
 
-  const handleToggleSelected = (email) => {
+  const handleToggleSelected = (email: string) => {
     setRecipients(
       recipients.map((r) =>
-        r.email === email ? { ...r, selected: !r.selected } : r,
-      ),
+        r.email === email ? { ...r, selected: !r.selected } : r
+      )
     );
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       handleAddRecipient();
@@ -86,55 +103,100 @@ const Recipient = ({ csvData }) => {
       return;
     }
 
+    if (csvData.length === 0) {
+      alert("No CSV data to send.");
+      return;
+    }
+
     try {
-      const response = await fetch("/api/sendCsv", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          csvData,
-          recipients: selectedRecipients,
-        }),
+      setIsSending(true);
+
+      // Convert the CSV data to a string
+      const csvString = Papa.unparse(csvData);
+
+      // Log the CSV data to the console
+      console.log("CSV Data (Object format):", csvData);
+      console.log("CSV String:", csvString);
+      console.log("Selected Recipients:", selectedRecipients);
+
+      // Create a File object from the CSV string
+      const csvFile = new File([csvString], "exported_data.csv", {
+        type: "text/csv;charset=utf-8;",
       });
+
+      // Create FormData for multipart/form-data request
+      const formData = new FormData();
+
+      // Append the CSV file
+      formData.append("file", csvFile);
+
+      // Append recipient emails as a JSON string
+      //   formData.append(
+      //     "recipients",
+      //     JSON.stringify(selectedRecipients.map((r) => r.email))
+      //   );
+
+      // Send the request with FormData
+
+      const emailList = selectedRecipients.map((r) => r.email).join(",");
+      const response = await fetch(
+        `http://10.10.1.211:8080/csv?receiver=${emailList}`,
+        {
+          method: "POST",
+
+          // Don't set Content-Type header, it will be set automatically with the correct boundary
+          body: formData,
+        }
+      );
 
       if (response.ok) {
         alert("CSV sent successfully!");
+        console.log(
+          "API Response:",
+          await response.json().catch(() => "No JSON response")
+        );
       } else {
         alert("Failed to send CSV.");
+        console.error(
+          "API Error:",
+          response.status,
+          await response.text().catch(() => "No text response")
+        );
       }
     } catch (error) {
       console.error("Error sending CSV:", error);
       alert("An error occurred while sending the CSV.");
+    } finally {
+      setIsSending(false);
     }
   };
 
   return (
-    <div>
-      <Card className="w-[350px]">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-semibold text-gray-700">
-            Sheet It Out
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              placeholder="Emails, Comma Separated"
-              className="border border-gray-300 text-sm"
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-          </div>
-          <Button
-            className="w-full bg-gray-900 hover:bg-gray-800 text-white"
-            onClick={handleAddRecipient}
-          >
-            + Add Recipient
-          </Button>
+    <Card className="w-[350px]">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xl font-semibold text-gray-700">
+          Sheet It Out
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex gap-2">
+          <Input
+            type="text"
+            placeholder="Emails, Comma Separated"
+            className="border border-gray-300 text-sm"
+            value={emailInput}
+            onChange={(e) => setEmailInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+        </div>
+        <Button
+          className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+          onClick={handleAddRecipient}
+        >
+          <Plus className="w-4 h-4 mr-1" /> Add Recipient
+        </Button>
 
+        {recipients.length > 0 ? (
           <div className="mt-2">
             <h3 className="text-sm font-medium text-gray-500 mb-3">
               Added Recipients ({recipients.length})
@@ -144,7 +206,9 @@ const Recipient = ({ csvData }) => {
                 <div key={index} className="flex items-center gap-3 group">
                   <Avatar className="h-8 w-8">
                     <AvatarImage
-                      src={`/placeholder.svg?height=32&width=32&text=${recipient.name.charAt(0)}`}
+                      src={`/placeholder.svg?height=32&width=32&text=${recipient.name.charAt(
+                        0
+                      )}`}
                       alt={recipient.name}
                     />
                     <AvatarFallback>{recipient.name.charAt(0)}</AvatarFallback>
@@ -178,19 +242,32 @@ const Recipient = ({ csvData }) => {
               ))}
             </div>
           </div>
-
-          <div className="mt-auto pt-4">
-            <Button
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              disabled={!recipients.some((r) => r.selected)}
-              onClick={handleSend}
-            >
-              Send
-            </Button>
+        ) : (
+          // Empty state for recipients
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center mt-4">
+            <div className="w-12 h-12 mb-4 text-gray-300">
+              <Folder className="w-full h-full" strokeWidth={1} />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No Recipients Added Yet
+            </h3>
+            <p className="text-gray-500 text-sm max-w-xs">
+              Start adding recipients using the form above.
+            </p>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        )}
+
+        <div className="mt-auto pt-4">
+          <Button
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={!recipients.some((r) => r.selected) || isSending}
+            onClick={handleSend}
+          >
+            {isSending ? "Sending..." : "Send"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

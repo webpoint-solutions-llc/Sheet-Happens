@@ -11,16 +11,20 @@ import { Settings } from "lucide-react";
 import DataTable from "@/components/data-table";
 import EmptyWorksheet from "@/components/empty-worksheet";
 import Recipient from "@/components/recipient";
-// import PaginationFooter from "@/components/pagination-footer";
 
-export default function GetCsvPage() {
+interface GetCsvPageProps {
+  id?: string;
+}
+
+export default function GetCsvPage({
+  id = "1725815494_6448_log",
+}: GetCsvPageProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [csvText, setCsvText] = useState<string>(""); // Raw CSV text
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [csvData, setCsvData] = useState<any[]>([]); // Parsed CSV data (Array of objects)
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  // const rowsPerPage = 8;
   const [userName, setUserName] = useState("User");
 
   useEffect(() => {
@@ -31,11 +35,11 @@ export default function GetCsvPage() {
         setUserName(storedToken);
       }
     }
+
     async function fetchCsv() {
       try {
-        const res = await fetch(
-          "http://10.10.1.211:8080/csv/1725815494_6448_log"
-        );
+        // Use the dynamic ID from props in the API URL
+        const res = await fetch(`http://10.10.1.211:8080/csv/${id}`);
 
         if (!res.ok) {
           throw new Error(`HTTP error! Status: ${res.status}`);
@@ -58,7 +62,7 @@ export default function GetCsvPage() {
     }
 
     fetchCsv();
-  }, []);
+  }, [id]); // Re-fetch when ID changes
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -171,7 +175,6 @@ export default function GetCsvPage() {
 
   // Determine if we have data to display
   const hasData = csvData.length > 0 && !isLoading;
-  // const totalPages = Math.ceil(csvData.length / rowsPerPage);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -246,16 +249,8 @@ export default function GetCsvPage() {
         </Card>
 
         {/* Right Side - Sheet It Out */}
-        <Recipient />
+        <Recipient csvData={csvData} />
       </div>
-
-      {/* Footer with pagination */}
-      {/* <PaginationFooter
-        hasData={hasData}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        setCurrentPage={setCurrentPage}
-      /> */}
     </div>
   );
 }
