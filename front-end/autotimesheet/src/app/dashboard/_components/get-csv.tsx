@@ -1,13 +1,17 @@
 "use client";
 
+import type React from "react";
+
 import { useEffect, useState } from "react";
 import Papa from "papaparse";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Settings, ChevronLeft, ChevronRight } from "lucide-react";
+import { Settings } from "lucide-react";
+import DataTable from "@/components/data-table";
+import EmptyWorksheet from "@/components/empty-worksheet";
 import Recipient from "@/components/recipient";
+// import PaginationFooter from "@/components/pagination-footer";
 
 export default function GetCsvPage() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -16,9 +20,17 @@ export default function GetCsvPage() {
   const [csvData, setCsvData] = useState<any[]>([]); // Parsed CSV data (Array of objects)
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 8;
+  // const rowsPerPage = 8;
+  const [userName, setUserName] = useState("User");
 
   useEffect(() => {
+    // Get the user name from localStorage when component mounts
+    if (typeof window !== "undefined") {
+      const storedToken = localStorage.getItem("token");
+      if (storedToken) {
+        setUserName(storedToken);
+      }
+    }
     async function fetchCsv() {
       try {
         const res = await fetch(
@@ -41,6 +53,7 @@ export default function GetCsvPage() {
       } catch (error) {
         console.error("Failed to fetch CSV:", error);
         setIsLoading(false);
+        setCsvData([]); // Ensure empty array on error
       }
     }
 
@@ -62,58 +75,103 @@ export default function GetCsvPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setIsLoading(true);
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
       setCsvText(text);
 
-      const parsedData = Papa.parse(text, { header: true }).data;
+      // Parse the CSV data
+      let parsedData = Papa.parse(text, { header: true }).data;
       console.log("Parsed CSV from File:", parsedData);
+
+      // Filter out empty rows
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      parsedData = parsedData.filter((row: any) =>
+        Object.values(row).some((value) => value !== "")
+      );
+
+      // Map the CSV columns to our required fields
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      parsedData = parsedData.map((row: any) => {
+        // Check which format the CSV is in and map accordingly
+        if (row["Commit Hash"] !== undefined) {
+          // Format from the user's example
+          return {
+            Date: row.Date || "",
+            "Author Name": row.Author || "",
+            "Commit Type": row["Commit Type"] || "",
+            Scope: row.Scope || "",
+            Description: row.Message || "",
+            TimeStamp: "", // Empty by default for user input
+          };
+        } else if (row.Date !== undefined) {
+          // Format from the API
+          return {
+            Date: row.Date || "",
+            "Author Name": row["Author Name"] || "",
+            "Commit Type": row["Commit Type"] || "",
+            Scope: row.Scope || "",
+            Description: row.Description || "",
+            TimeStamp: "", // Empty by default for user input
+          };
+        } else {
+          // Try to guess the mapping based on available fields
+          const dateField =
+            Object.keys(row).find(
+              (key) =>
+                key.toLowerCase().includes("date") ||
+                key.toLowerCase().includes("time")
+            ) || "";
+
+          const authorField =
+            Object.keys(row).find(
+              (key) =>
+                key.toLowerCase().includes("author") ||
+                key.toLowerCase().includes("name")
+            ) || "";
+
+          const commitTypeField =
+            Object.keys(row).find(
+              (key) =>
+                key.toLowerCase().includes("commit type") ||
+                key.toLowerCase().includes("type")
+            ) || "";
+
+          const scopeField =
+            Object.keys(row).find((key) =>
+              key.toLowerCase().includes("scope")
+            ) || "";
+
+          const descriptionField =
+            Object.keys(row).find(
+              (key) =>
+                key.toLowerCase().includes("message") ||
+                key.toLowerCase().includes("description") ||
+                key.toLowerCase().includes("log")
+            ) || "";
+
+          return {
+            Date: row[dateField] || "",
+            "Author Name": row[authorField] || "",
+            "Commit Type": row[commitTypeField] || "",
+            Scope: row[scopeField] || "",
+            Description: row[descriptionField] || "",
+            TimeStamp: "", // Empty by default for user input
+          };
+        }
+      });
+
       setCsvData(parsedData);
       setIsLoading(false);
     };
     reader.readAsText(file);
   };
 
-  // Get date from timestamp for display
-  const getFormattedDate = (dateString: string) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "";
-
-    return `Nov ${date.getDate()}`; // Simplified to match screenshot format
-  };
-
-  // Pagination
-  const totalPages = Math.ceil(csvData.length / rowsPerPage);
-  const paginatedData = csvData.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
-  );
-
-  // Generate pagination numbers
-  const generatePaginationNumbers = () => {
-    const pages = [];
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      pages.push(1);
-      if (currentPage > 3) pages.push("...");
-
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
-
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-
-      if (currentPage < totalPages - 2) pages.push("...");
-      pages.push(totalPages);
-    }
-    return pages;
-  };
+  // Determine if we have data to display
+  const hasData = csvData.length > 0 && !isLoading;
+  // const totalPages = Math.ceil(csvData.length / rowsPerPage);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -121,7 +179,9 @@ export default function GetCsvPage() {
       <div className="p-6 pb-0">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Welcome, User</h1>
+            <h1 className="text-2xl font-bold text-gray-800">
+              Welcome, {userName}
+            </h1>
             <p className="text-gray-500 text-sm">
               Track, manage and forecast your Worklogs.
             </p>
@@ -150,148 +210,37 @@ export default function GetCsvPage() {
               <CardTitle className="text-xl font-semibold text-gray-700">
                 Worksheet
               </CardTitle>
-              <div className="flex items-center gap-4">
-                <label
-                  htmlFor="file-upload"
-                  className="cursor-pointer text-sm text-black bg-white-600 px-4 py-2 rounded border border-gray-300"
-                >
-                  Import CSV
-                </label>
-                <input
-                  id="file-upload"
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </div>
+              {hasData && (
+                <div className="flex items-center gap-4">
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer text-sm text-white bg-gray-900 hover:bg-gray-800 px-4 py-2 rounded"
+                  >
+                    Import CSV
+                  </label>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="text-center py-10">Loading...</div>
+            ) : hasData ? (
+              <DataTable
+                data={csvData}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                handleInputChange={handleInputChange}
+              />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="py-3 px-4 font-medium text-gray-500">
-                        Time
-                      </th>
-                      <th className="py-3 px-4 font-medium text-gray-500">
-                        Name
-                      </th>
-                      <th className="py-3 px-4 font-medium text-gray-500">
-                        Description/Log
-                      </th>
-                      <th className="py-3 px-4 font-medium text-gray-500">
-                        Time Log (Hour)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedData.map((row, rowIndex) => {
-                      if (!row.Date && Object.keys(row).length <= 1)
-                        return null; // Skip empty rows
-
-                      const actualIndex =
-                        rowIndex + (currentPage - 1) * rowsPerPage;
-                      return (
-                        <tr
-                          key={rowIndex}
-                          className="border-b border-gray-100 hover:bg-gray-50"
-                        >
-                          <td className="py-4 px-4 align-top">
-                            <Input
-                              className="border-none shadow-none focus-visible:ring-0 p-0 h-auto text-gray-700"
-                              type="text"
-                              value={getFormattedDate(row.Date)}
-                              onChange={(e) =>
-                                handleInputChange(e, actualIndex, "Date")
-                              }
-                            />
-                          </td>
-                          <td className="py-4 px-4 align-top">
-                            <Input
-                              className="border-none shadow-none focus-visible:ring-0 p-0 h-auto text-gray-700 font-medium"
-                              type="text"
-                              value={row["Author Name"] || ""}
-                              onChange={(e) =>
-                                handleInputChange(e, actualIndex, "Author Name")
-                              }
-                            />
-                          </td>
-                          <td className="py-4 px-4 align-top">
-                            <Input
-                              className="border-none shadow-none focus-visible:ring-0 p-0 h-auto text-gray-700"
-                              type="text"
-                              value={row.Description || ""}
-                              onChange={(e) =>
-                                handleInputChange(e, actualIndex, "Description")
-                              }
-                            />
-                          </td>
-                          <td className="py-4 px-4 align-top">
-                            <Input
-                              className="border-none shadow-none focus-visible:ring-0 p-0 h-auto text-gray-700 w-16 text-center"
-                              type="text"
-                              onChange={(e) =>
-                                handleInputChange(e, actualIndex, "TimeStamp")
-                              }
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-
-                {/* Pagination */}
-                <div className="flex justify-between items-center mt-6">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-500 flex items-center gap-1"
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" /> Previous
-                  </Button>
-                  <div className="flex gap-1">
-                    {generatePaginationNumbers().map((item, index) => (
-                      <Button
-                        key={index}
-                        variant={currentPage === item ? "default" : "ghost"}
-                        size="sm"
-                        className={`w-8 h-8 p-0 ${
-                          currentPage === item
-                            ? "bg-blue-600 text-white"
-                            : "text-gray-600"
-                        }`}
-                        onClick={() => {
-                          if (typeof item === "number") {
-                            setCurrentPage(item);
-                          }
-                        }}
-                        disabled={typeof item !== "number"}
-                      >
-                        {item}
-                      </Button>
-                    ))}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-500 flex items-center gap-1"
-                    onClick={() =>
-                      setCurrentPage(Math.min(totalPages, currentPage + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                  >
-                    Next <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              <EmptyWorksheet onImport={handleFileUpload} />
             )}
           </CardContent>
         </Card>
@@ -299,6 +248,14 @@ export default function GetCsvPage() {
         {/* Right Side - Sheet It Out */}
         <Recipient />
       </div>
+
+      {/* Footer with pagination */}
+      {/* <PaginationFooter
+        hasData={hasData}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        setCurrentPage={setCurrentPage}
+      /> */}
     </div>
   );
 }
