@@ -35,9 +35,34 @@ const LoginPage = () => {
     },
   });
 
+  async function login(values: FormValues) {
+    try {
+      const response = await fetch("http://10.10.1.211:8080/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        // Handle the error if the response is not OK
+        throw new Error("Login failed");
+      }
+
+      const data = await response.json();
+      console.log("Login successful:", data);
+      localStorage.setItem("token", data.payload.name); // Store token in local storage
+      router.push("/dashboard"); // Redirect to dashboard after successful login
+    } catch (error) {
+      console.error("Login error:", error);
+      // Optionally display error messages to the user
+    }
+  }
+
   function onSubmit(values: FormValues) {
     console.log(values);
-    router.push("/dashboard");
+    login(values);
   }
 
   return (
