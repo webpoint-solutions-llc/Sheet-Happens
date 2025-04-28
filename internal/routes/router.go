@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/mail"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,6 +67,28 @@ func Routes(r *echo.Group) {
 	})
 
 	r.POST("/csv", func(c echo.Context) error {
+		var to string
+		var cc []string
+		receiver := c.QueryParam("receiver")
+		if receiver == "" {
+			to = "aashutosh.poudel@webpoint.io"
+		} else {
+			addressList, err := mail.ParseAddressList(receiver)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "invalid receiver format")
+			}
+
+			if len(addressList) > 0 {
+				to = addressList[0].Address
+			}
+
+			if len(addressList) > 1 {
+				for _, addr := range addressList[1:] {
+					cc = append(cc, addr.Address)
+				}
+			}
+		}
+
 		file, err := c.FormFile("file")
 		if err != nil {
 			return err
@@ -123,13 +146,16 @@ func Routes(r *echo.Group) {
 
 			subject := fmt.Sprintf("TimeSheet received for %s, %s", reponame, formattedTime)
 
-			emailError := services.SendEmailWithAttachment(services.EmailRequestParams{
-				To:              "aashutosh.poudel@webpoint.io",
+			emailParams := services.EmailRequestParams{
+				To:              to,
+				CC:              cc,
 				EmailAttachment: []services.EmailAttachment{attachment},
 				EmailTemplate:   "email",
 				Subject:         subject,
 				TemplateParams:  data,
-			})
+			}
+
+			emailError := services.SendEmailWithAttachment(emailParams)
 
 			if emailError != nil {
 				log.Println("", emailError)
