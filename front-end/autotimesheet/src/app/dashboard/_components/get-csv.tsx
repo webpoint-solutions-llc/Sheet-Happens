@@ -16,7 +16,9 @@ interface GetCsvPageProps {
   id?: string;
 }
 
-export default function GetCsvPage({ id = "" }: GetCsvPageProps) {
+export default function GetCsvPage({
+  id = "1725815494_6448_log",
+}: GetCsvPageProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [csvText, setCsvText] = useState<string>(""); // Raw CSV text
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
