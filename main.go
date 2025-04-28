@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/webpointsolutions/sheet-happens/internal/server"
+	"github.com/webpointsolutions/sheet-happens/internal/services"
 )
 
 var servflag = flag.Bool("serv", false, "serve http server ui")
@@ -30,7 +31,5 @@ func main() {
 
 	folder := os.Args[1]
 
-	_ = folder
-
-	// services.GenerateCSV(folder)
+	services.GenerateCSV(folder)
 }
