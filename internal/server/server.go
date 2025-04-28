@@ -1,36 +1,36 @@
 package server
 
 import (
-	"html/template"
-	"io"
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
-type TemplateRenderer struct {
-	templates *template.Template
-}
-
-func (t *TemplateRenderer) Render(w io.Writer, name string, data any, c echo.Context) error {
-	return t.templates.ExecuteTemplate(w, name, data)
-}
-
-func NewServer() *echo.Echo {
-	renderer := &TemplateRenderer{
-		templates: template.Must(template.ParseFiles("templates/index.html")),
-	}
-
+func NewServer() http.Handler {
 	mux := echo.New()
 
-	mux.Renderer = renderer
+	mux.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"*"},
+		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+		ExposeHeaders:    []string{echo.HeaderContentDisposition},
+		AllowCredentials: true,
+	}))
 
-	mux.GET("/", func(c echo.Context) error {
-		data := map[string]any{
-			"Title": "Welcome to My Page",
+	mux.GET("/csv/:id", func(c echo.Context) error {
+		id := c.Param("id")
+		filename := id + ".csv"
+		filePath := filepath.Join("out", filename) // looks inside ./out/{id}
+
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			fmt.Println("")
+			return echo.NewHTTPError(http.StatusNotFound, "file not found")
 		}
 
-		return c.Render(http.StatusOK, "index.html", data)
+		return c.File(filePath)
 	})
 
 	return mux
