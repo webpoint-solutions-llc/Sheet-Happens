@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/webpointsolutions/sheet-happens/internal/config"
 	"github.com/webpointsolutions/sheet-happens/internal/server"
 	"github.com/webpointsolutions/sheet-happens/internal/services"
 )
@@ -15,6 +16,7 @@ var servflag = flag.Bool("serv", false, "serve http server ui")
 
 func init() {
 	flag.Parse()
+	config.LoadEnv()
 }
 
 func main() {

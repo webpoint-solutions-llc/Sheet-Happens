@@ -3,13 +3,16 @@ package routes
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/webpointsolutions/sheet-happens/internal/responder"
+	"github.com/webpointsolutions/sheet-happens/internal/services"
 	"github.com/webpointsolutions/sheet-happens/internal/types"
 	"github.com/webpointsolutions/sheet-happens/internal/utils"
 )
@@ -86,6 +89,54 @@ func Routes(r *echo.Group) {
 		if _, err := io.Copy(dst, src); err != nil {
 			return err
 		}
+
+		// send email on background
+		go func() {
+			attachment := services.EmailAttachment{
+				FileName:    file.Filename,
+				ContentType: "application/octet-stream",
+			}
+
+			attachment.Data, err = os.ReadFile(dstPath)
+			if err != nil {
+				log.Printf("could not read the file after saving: %v \n", err)
+				return
+			}
+
+			data := map[string]any{
+				"Name": "Aashutosh",
+			}
+
+			// TODO: extract repo name from file itself
+			reponame := ""
+
+			location, err := time.LoadLocation("Asia/Kathmandu")
+			if err != nil {
+				fmt.Println("Error loading location:", err)
+				return
+			}
+
+			// Get the current time in UTC +5:45
+			currentTime := time.Now().In(location)
+
+			// Format the time as "March 25 2024, 5:45 PM"
+			formattedTime := currentTime.Format("January 2 2006, 3:04 PM")
+
+			subject := fmt.Sprintf("TimeSheet received for %s, %s", reponame, formattedTime)
+
+			emailError := services.SendEmailWithAttachment(services.EmailRequestParams{
+				To:              "aashutosh.poudel@webpoint.io",
+				EmailAttachment: []services.EmailAttachment{attachment},
+				EmailTemplate:   "email",
+				Subject:         subject,
+				TemplateParams:  data,
+			})
+
+			if emailError != nil {
+				log.Println("", emailError)
+				return
+			}
+		}()
 
 		return responder.Success(c, "Successfully uploaded the CSV")
 	})
