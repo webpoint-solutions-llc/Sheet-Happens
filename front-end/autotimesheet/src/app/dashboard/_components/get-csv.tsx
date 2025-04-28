@@ -5,14 +5,14 @@ import Papa from "papaparse";
 
 export default function GetCsvPage() {
   const [csvText, setCsvText] = useState<string>(""); // Raw CSV text
-  const [csvData, setCsvData] = useState<any[]>([]); // Parsed CSV data (2D array)
+  const [csvData, setCsvData] = useState<any[]>([]); // Parsed CSV data (Array of objects)
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchCsv() {
       try {
         const res = await fetch(
-          "http://10.10.1.211:8080/csv/1725815494_6448_log",
+          "http://10.10.1.211:8080/csv/1725815494_6448_log"
         );
 
         if (!res.ok) {
@@ -20,15 +20,14 @@ export default function GetCsvPage() {
         }
 
         const text = await res.text();
-        console.log("CSV Text:", text); // Log for debugging
+        console.log("CSV Text:", text);
 
-        setCsvText(text); // Set the raw CSV text
+        setCsvText(text);
 
-        // Parse CSV text into a 2D array
         const parsedData = Papa.parse(text, { header: true }).data;
-        console.log("Parsed CSV Data:", parsedData); // Log parsed data to verify
-        setCsvData(parsedData); // Set parsed data to state
-        setIsLoading(false); // Stop loading state
+        console.log("Parsed CSV Data:", parsedData);
+        setCsvData(parsedData);
+        setIsLoading(false);
       } catch (error) {
         console.error("Failed to fetch CSV:", error);
         setIsLoading(false);
@@ -38,24 +37,49 @@ export default function GetCsvPage() {
     fetchCsv();
   }, []);
 
-  // Handle input changes
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     rowIndex: number,
-    colIndex: number,
+    colIndex: number
   ) => {
     const newData = [...csvData];
-    newData[rowIndex][colIndex] = e.target.value;
+    const key = Object.keys(newData[rowIndex])[colIndex];
+    newData[rowIndex][key] = e.target.value;
     setCsvData(newData);
+  };
+
+  // Handle CSV file import from local file
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      setCsvText(text);
+
+      const parsedData = Papa.parse(text, { header: true }).data;
+      console.log("Parsed CSV from File:", parsedData);
+      setCsvData(parsedData);
+      setIsLoading(false);
+    };
+    reader.readAsText(file);
   };
 
   return (
     <div>
+      <h2>CSV Viewer</h2>
+
+      {/* Button to import CSV manually */}
+      <div style={{ marginBottom: "20px" }}>
+        <input type="file" accept=".csv" onChange={handleFileUpload} />
+      </div>
+
       {isLoading ? (
         <p>Loading...</p>
       ) : (
         <div>
-          <table>
+          <table border={1} cellPadding={5}>
             <thead>
               <tr>
                 {csvData[0] &&
@@ -71,10 +95,10 @@ export default function GetCsvPage() {
                     <td key={colIndex}>
                       <input
                         type="text"
-                        value={cell} // Bind to correct value
+                        value={cell as string}
                         onChange={(e) =>
                           handleInputChange(e, rowIndex, colIndex)
-                        } // Update state
+                        }
                       />
                     </td>
                   ))}
