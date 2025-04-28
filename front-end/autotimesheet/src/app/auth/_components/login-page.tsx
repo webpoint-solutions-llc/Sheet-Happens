@@ -25,7 +25,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const LoginPage = () => {
+const LoginComponent = () => {
   const router = useRouter();
 
   const form = useForm<FormValues>({
@@ -68,12 +68,14 @@ const LoginPage = () => {
 
   return (
     <>
-      <div className="flex items-center justify-center h-screen bg-gray-100">
-        <div className="flex flex-col max-w-md w-full bg-white shadow-lg rounded-lg p-8">
-          <div className="flex items-center justify-center">
+      <div className="flex items-center justify-center my-20">
+        <div className="flex flex-col max-w-md w-full bg-white  rounded-lg p-8">
+          <div className="flex items-center justify-center py-3">
             <LogoComponent />
           </div>
-          <h1 className="text-3xl font-semibold">Log in to your account</h1>
+          <div className="text-3xl font-semibold py-3">
+            Log in to your account
+          </div>
           <div className="flex items-center justify-center flex-col w-full gap-3 mb-6">
             <p className="text-gray-500">
               Welcome back! Please enter your details
@@ -84,7 +86,7 @@ const LoginPage = () => {
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
+                className="space-y-5"
               >
                 <FormField
                   control={form.control}
@@ -125,7 +127,10 @@ const LoginPage = () => {
                       id="remember"
                       className="rounded border-gray-300"
                     />
-                    <label htmlFor="remember" className="text-sm text-gray-500">
+                    <label
+                      htmlFor="remember"
+                      className="text-sm text-gray-500 py-4"
+                    >
                       Remember for 30 days
                     </label>
                   </div>
@@ -142,15 +147,6 @@ const LoginPage = () => {
                 </Button>
               </form>
             </Form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-500">
-                Do not have an account?
-                <a href="#" className="text-blue-600 hover:underline">
-                  Sign up
-                </a>
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -158,4 +154,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default LoginComponent;
