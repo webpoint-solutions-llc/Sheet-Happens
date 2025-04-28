@@ -107,8 +107,7 @@ func Routes(r *echo.Group) {
 				"Name": "Aashutosh",
 			}
 
-			// TODO: extract repo name from file itself
-			reponame := ""
+			reponame := utils.GetRepoNameFromFileName(file.Filename)
 
 			location, err := time.LoadLocation("Asia/Kathmandu")
 			if err != nil {

@@ -26,6 +26,8 @@ func GenerateCSV(folder string) {
 		log.Fatal(err)
 	}
 
+	repoName := utils.GetRepoNameFromRepo(repo)
+
 	branches, err := repo.Branches()
 	if err != nil {
 		log.Fatal(err)
@@ -76,7 +78,7 @@ func GenerateCSV(folder string) {
 
 	nowtime := time.Now().Unix()
 
-	outName := fmt.Sprintf("out/%d_%s_log.csv", nowtime, utils.Generate4DigitCode())
+	outName := fmt.Sprintf("out/%d_%s_%s_log.csv", nowtime, repoName, utils.Generate4DigitCode())
 
 	f, err := os.Create(outName)
 	if err != nil {
