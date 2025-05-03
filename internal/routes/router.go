@@ -171,6 +171,11 @@ func Routes(r *echo.Group) {
 			}
 		}()
 
-		return responder.Success(c, "Successfully uploaded the CSV")
+		res := map[string]any{
+			"message":  "Successfully uploaded the CSV",
+			"filename": newFileName,
+		}
+
+		return responder.Success(c, res)
 	})
 }

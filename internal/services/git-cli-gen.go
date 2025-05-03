@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bytes"
 	"encoding/csv"
 	"fmt"
 	"log"
@@ -14,7 +15,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
-	"github.com/webpointsolutions/sheet-happens/internal/config"
 	"github.com/webpointsolutions/sheet-happens/internal/utils"
 )
 
@@ -118,13 +118,29 @@ func GenerateCSV(folder string, branchName string, sinceDays int) {
 
 	// Prepare output
 	filename := fmt.Sprintf("%d_%s_%s_log", time.Now().Unix(), repoName, utils.Generate4DigitCode())
-	outPath := fmt.Sprintf("out/%s.csv", filename)
+	fileNameWithExt := filename + ".csv"
 
-	if err := os.MkdirAll("out", 0o755); err != nil {
-		log.Fatalf("Failed to create output directory: %v", err)
+	backendURL := os.Getenv("BACKEND_URL")
+	if backendURL != "" {
+		var buf bytes.Buffer
+		w := csv.NewWriter(&buf)
+		if err := w.WriteAll(records); err != nil {
+			log.Fatalf("Error writing CSV to buffer: %v", err)
+		}
+		w.Flush()
+
+		// Upload from memory buffer
+		file, err := UploadCSVFromBuffer(&buf, backendURL, fileNameWithExt)
+		if err != nil {
+			log.Fatalf("Failed to upload CSV: %v", err)
+			return
+		}
+		fileDownloadUrl := backendURL + "/csv/" + file
+		fmt.Println("Get your csv from here: ", fileDownloadUrl)
+		return
 	}
 
-	file, err := os.Create(outPath)
+	file, err := os.Create(fileNameWithExt)
 	if err != nil {
 		log.Fatalf("Error creating CSV: %v", err)
 	}
@@ -134,8 +150,9 @@ func GenerateCSV(folder string, branchName string, sinceDays int) {
 	if err := w.WriteAll(records); err != nil {
 		log.Fatalf("Error writing CSV: %v", err)
 	}
+	w.Flush()
 
-	fmt.Println("URL: ", GetFileFrontendUrl(filename))
+	fmt.Println("CSV generated")
 }
 
 func parseSemanticCommit(message string) (commitType, scope, description string) {
@@ -155,5 +172,6 @@ func parseSemanticCommit(message string) (commitType, scope, description string)
 }
 
 func GetFileFrontendUrl(filename string) string {
-	return config.Env.FrontHost + "/dashboard/" + filename
+	host := os.Getenv("FRONTEND_HOST")
+	return host + "/dashboard/" + filename
 }
