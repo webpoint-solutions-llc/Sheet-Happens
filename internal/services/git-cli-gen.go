@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -44,39 +43,27 @@ func GenerateCSV(folder string, branchName string, sinceDays int) {
 
 	repoName := utils.GetRepoNameFromRepo(repo)
 
-	var records [][]string
-	records = append(records, []string{"Date", "Author Name", "Commit Type", "Scope", "Description", "TimeLog"})
+	records := [][]string{
+		{"Date", "Author Name", "Commit Type", "Scope", "Description", "TimeStamp"},
+	}
 
-	var sinceTime time.Time
+	sinceTime := time.Time{}
 	if sinceDays > 0 {
 		sinceTime = time.Now().AddDate(0, 0, -sinceDays)
 	}
 
 	seenCommits := make(map[string]bool)
+	var allCommits []*object.Commit
 
-	processCommits := func(commitIter object.CommitIter) {
-		defer commitIter.Close()
-		commitIter.ForEach(func(c *object.Commit) error {
-			hash := c.Hash.String()
-
-			if seenCommits[hash] {
+	// Centralized function for collecting commits
+	collectCommits := func(iter object.CommitIter) {
+		defer iter.Close()
+		iter.ForEach(func(c *object.Commit) error {
+			if seenCommits[c.Hash.String()] || (!sinceTime.IsZero() && c.Author.When.Before(sinceTime)) {
 				return nil
 			}
-
-			if !sinceTime.IsZero() && c.Author.When.Before(sinceTime) {
-				return nil
-			}
-
-			seenCommits[hash] = true
-
-			date := c.Author.When.Format("2006-01-02 15:04:05")
-			author := c.Author.Name
-			message := strings.TrimSpace(c.Message)
-
-			commitType, scope, desc := parseSemanticCommit(message)
-
-			records = append(records, []string{date, author, commitType, scope, desc, ""})
-
+			seenCommits[c.Hash.String()] = true
+			allCommits = append(allCommits, c)
 			return nil
 		})
 	}
@@ -86,56 +73,67 @@ func GenerateCSV(folder string, branchName string, sinceDays int) {
 		if err != nil {
 			log.Fatalf("Branch %s not found: %v", branchName, err)
 		}
-
-		commitIter, err := repo.Log(&git.LogOptions{From: ref.Hash()})
+		iter, err := repo.Log(&git.LogOptions{From: ref.Hash()})
 		if err != nil {
-			log.Fatal("Couldn't retrieve commits from branch:", err)
+			log.Fatalf("Couldn't retrieve commits from branch: %v", err)
 		}
-
-		processCommits(commitIter)
-
+		collectCommits(iter)
 	} else {
 		branches, err := repo.Branches()
 		if err != nil {
 			log.Fatal(err)
 		}
-
 		branches.ForEach(func(ref *plumbing.Reference) error {
-			commitIter, err := repo.Log(&git.LogOptions{From: ref.Hash()})
-			if err != nil {
-				log.Println("Couldn't find commits from log history:", err.Error())
-				return nil
+			iter, err := repo.Log(&git.LogOptions{From: ref.Hash()})
+			if err == nil {
+				collectCommits(iter)
 			}
-
-			processCommits(commitIter)
 			return nil
 		})
 	}
 
-	sort.Slice(records[1:], func(i, j int) bool {
-		return records[i+1][0] < records[j+1][0]
-	})
+	// Reverse commits (newest first)
+	for i := len(allCommits) - 1; i >= 0; i-- {
+		c := allCommits[i]
 
-	nowtime := time.Now().Unix()
-	filename := fmt.Sprintf("%d_%s_%s_log", nowtime, repoName, utils.Generate4DigitCode())
-	outName := fmt.Sprintf("out/%s.csv", filename)
+		date := c.Author.When.Format("2006-01-02 15:04:05")
+		author := c.Author.Name
+		commitType, scope, desc := parseSemanticCommit(strings.TrimSpace(c.Message))
+
+		timeDiff := ""
+		if i < len(allCommits)-1 {
+			next := allCommits[i+1]
+			diff := c.Author.When.Sub(next.Author.When)
+			h := int(diff.Hours())
+			m := int(diff.Minutes()) % 60
+			if h > 0 {
+				timeDiff = fmt.Sprintf("%dh %dm", h, m)
+			} else {
+				timeDiff = fmt.Sprintf("%dm", m)
+			}
+		}
+
+		records = append(records, []string{date, author, commitType, scope, desc, timeDiff})
+	}
+
+	// Prepare output
+	filename := fmt.Sprintf("%d_%s_%s_log", time.Now().Unix(), repoName, utils.Generate4DigitCode())
+	outPath := fmt.Sprintf("out/%s.csv", filename)
 
 	if err := os.MkdirAll("out", 0o755); err != nil {
-		log.Fatal("Failed to create output directory:", err)
+		log.Fatalf("Failed to create output directory: %v", err)
 	}
 
-	f, err := os.Create(outName)
+	file, err := os.Create(outPath)
 	if err != nil {
-		log.Fatal("Error creating CSV:", err)
+		log.Fatalf("Error creating CSV: %v", err)
 	}
-	defer f.Close()
+	defer file.Close()
 
-	w := csv.NewWriter(f)
-	err = w.WriteAll(records)
-	if err != nil {
-		log.Fatal("Error writing CSV:", err)
+	w := csv.NewWriter(file)
+	if err := w.WriteAll(records); err != nil {
+		log.Fatalf("Error writing CSV: %v", err)
 	}
-	w.Flush()
 
 	fmt.Println("URL: ", GetFileFrontendUrl(filename))
 }
