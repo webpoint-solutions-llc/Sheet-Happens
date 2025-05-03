@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Folder, Plus, X } from "lucide-react";
+import env from "@/env.mjs";
 import Papa from "papaparse";
 
 interface RecipientProps {
@@ -29,7 +30,7 @@ const Recipient = ({ csvData = [] }: RecipientProps) => {
 
   const validateEmail = (email: string): RegExpMatchArray | null => {
     return email.match(
-      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
     );
   };
 
@@ -82,8 +83,8 @@ const Recipient = ({ csvData = [] }: RecipientProps) => {
   const handleToggleSelected = (email: string) => {
     setRecipients(
       recipients.map((r) =>
-        r.email === email ? { ...r, selected: !r.selected } : r
-      )
+        r.email === email ? { ...r, selected: !r.selected } : r,
+      ),
     );
   };
 
@@ -140,27 +141,27 @@ const Recipient = ({ csvData = [] }: RecipientProps) => {
 
       const emailList = selectedRecipients.map((r) => r.email).join(",");
       const response = await fetch(
-        `http://10.10.1.211:8080/csv?receiver=${emailList}`,
+        `${env.NEXT_PUBLIC_BACKEND_URL}/csv?receiver=${emailList}`,
         {
           method: "POST",
 
           // Don't set Content-Type header, it will be set automatically with the correct boundary
           body: formData,
-        }
+        },
       );
 
       if (response.ok) {
         alert("CSV sent successfully!");
         console.log(
           "API Response:",
-          await response.json().catch(() => "No JSON response")
+          await response.json().catch(() => "No JSON response"),
         );
       } else {
         alert("Failed to send CSV.");
         console.error(
           "API Error:",
           response.status,
-          await response.text().catch(() => "No text response")
+          await response.text().catch(() => "No text response"),
         );
       }
     } catch (error) {
@@ -207,7 +208,7 @@ const Recipient = ({ csvData = [] }: RecipientProps) => {
                   <Avatar className="h-8 w-8">
                     <AvatarImage
                       src={`/placeholder.svg?height=32&width=32&text=${recipient.name.charAt(
-                        0
+                        0,
                       )}`}
                       alt={recipient.name}
                     />

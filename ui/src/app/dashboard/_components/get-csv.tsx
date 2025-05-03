@@ -2,15 +2,17 @@
 
 import type React from "react";
 
-import { useEffect, useState } from "react";
-import Papa from "papaparse";
+import DataTable from "@/components/data-table";
+import EmptyWorksheet from "@/components/empty-worksheet";
+import Recipient from "@/components/recipient";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Settings } from "lucide-react";
-import DataTable from "@/components/data-table";
-import EmptyWorksheet from "@/components/empty-worksheet";
-import Recipient from "@/components/recipient";
+import Papa from "papaparse";
+import { useEffect, useState } from "react";
+
+import env from "@/env.mjs";
 
 interface GetCsvPageProps {
   id?: string;
@@ -39,7 +41,7 @@ export default function GetCsvPage({
     async function fetchCsv() {
       try {
         // Use the dynamic ID from props in the API URL
-        const res = await fetch(`http://10.10.1.211:8080/csv/${id}`);
+        const res = await fetch(`${env.NEXT_PUBLIC_BACKEND_URL}/csv/${id}`);
 
         if (!res.ok) {
           throw new Error(`HTTP error! Status: ${res.status}`);

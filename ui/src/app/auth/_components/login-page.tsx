@@ -1,7 +1,7 @@
 "use client";
 
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
@@ -10,11 +10,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+
 import LogoComponent from "../../../../public/logo";
+
+import env from "@/env.mjs";
 
 const formSchema = z.object({
   email: z
@@ -41,7 +44,7 @@ const LoginComponent = () => {
 
   async function login(values: FormValues) {
     try {
-      const response = await fetch("http://10.10.1.211:8080/login", {
+      const response = await fetch(`${env.NEXT_PUBLIC_BACKEND_URL}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
